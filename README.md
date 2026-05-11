@@ -33,8 +33,8 @@ We hope you find this tool as useful as we do.
 To run locally, simply execute these commands in the root of this repository:
 
 ```
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ## Controls
