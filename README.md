@@ -45,6 +45,12 @@ pnpm dev
 - Hold the `C` key to show the original model. Release it to show the compressed model.
 - Hold the `X` key to highlight meshes that use the selected material.
 
+## Privacy
+
+The hosted version at [gltf-compressor.com](https://gltf-compressor.com/) records anonymous usage events via [PostHog](https://posthog.com/) so we can understand how the tool is used and where to invest. Autocapture and session recording are disabled. Only a small set of explicit events is sent, and no file names or model contents ever leave your browser.
+
+Builds served from any other host (local development, forks, self-hosted deployments) collect nothing. The PostHog key is stored as a GitHub Actions secret on the canonical repository and is not inherited by forks.
+
 ## Acknowledgments
 
 This tool relies heavily on Don McCurdy's fantastic [glTF Transform](https://gltf-transform.dev/) library and Hu Song's [KTX2-Encoder](https://husong.me/ktx2-encoder/) library.
