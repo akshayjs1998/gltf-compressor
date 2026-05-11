@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
+import { trackBulkOperation } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -118,6 +119,8 @@ export default function BulkMaterialEditingPanel() {
   const handleBulkFormatChange = async () => {
     if (isBulkProcessing) return;
 
+    const startMs = Date.now();
+
     try {
       useModelStore.setState({ isBulkProcessing: true });
 
@@ -160,6 +163,12 @@ export default function BulkMaterialEditingPanel() {
 
       // Update stats
       updateModelStats();
+      trackBulkOperation({
+        setting: "format",
+        value: bulkFormat,
+        affectedTextureCount: textures.length,
+        durationSec: (Date.now() - startMs) / 1000,
+      });
       toast.success(
         `Successfully converted ${textures.length} texture${textures.length !== 1 ? "s" : ""} to ${bulkFormat === "image/jpeg" ? "JPEG" : bulkFormat === "image/png" ? "PNG" : bulkFormat === "image/webp" ? "WebP" : "KTX2"}.`
       );
@@ -178,6 +187,7 @@ export default function BulkMaterialEditingPanel() {
     if (isBulkProcessing) return;
 
     const targetResolution = parseInt(bulkResolution, 10);
+    const startMs = Date.now();
 
     try {
       useModelStore.setState({ isBulkProcessing: true });
@@ -232,6 +242,12 @@ export default function BulkMaterialEditingPanel() {
 
       // Update stats
       updateModelStats();
+      trackBulkOperation({
+        setting: "resolution",
+        value: targetResolution,
+        affectedTextureCount: textures.length,
+        durationSec: (Date.now() - startMs) / 1000,
+      });
       toast.success(
         `Successfully set max resolution of all textures to ${targetResolution} pixels.`
       );
@@ -248,6 +264,8 @@ export default function BulkMaterialEditingPanel() {
 
   const handleBulkQualityChange = async () => {
     if (isBulkProcessing) return;
+
+    const startMs = Date.now();
 
     try {
       useModelStore.setState({ isBulkProcessing: true });
@@ -291,6 +309,12 @@ export default function BulkMaterialEditingPanel() {
 
       // Update stats
       updateModelStats();
+      trackBulkOperation({
+        setting: "quality",
+        value: bulkQuality,
+        affectedTextureCount: textures.length,
+        durationSec: (Date.now() - startMs) / 1000,
+      });
       toast.success(
         `Successfully set quality to ${Number(bulkQuality.toFixed(2))} for ${textures.length} texture${textures.length !== 1 ? "s" : ""}.`
       );
@@ -307,6 +331,8 @@ export default function BulkMaterialEditingPanel() {
 
   const handleBulkKtx2OutputTypeChange = async () => {
     if (isBulkProcessing) return;
+
+    const startMs = Date.now();
 
     try {
       useModelStore.setState({ isBulkProcessing: true });
@@ -356,6 +382,12 @@ export default function BulkMaterialEditingPanel() {
 
       // Update stats
       updateModelStats();
+      trackBulkOperation({
+        setting: "ktx2_output_type",
+        value: bulkKtx2OutputType,
+        affectedTextureCount: textures.length,
+        durationSec: (Date.now() - startMs) / 1000,
+      });
       toast.success(
         `Successfully converted ${textures.length} KTX2 texture${textures.length !== 1 ? "s" : ""} to ${bulkKtx2OutputType}.`
       );
@@ -372,6 +404,8 @@ export default function BulkMaterialEditingPanel() {
 
   const handleBulkGenerateMipmapsChange = async () => {
     if (isBulkProcessing) return;
+
+    const startMs = Date.now();
 
     try {
       useModelStore.setState({ isBulkProcessing: true });
@@ -421,6 +455,12 @@ export default function BulkMaterialEditingPanel() {
 
       // Update stats
       updateModelStats();
+      trackBulkOperation({
+        setting: "ktx2_generate_mipmaps",
+        value: bulkGenerateMipmaps,
+        affectedTextureCount: textures.length,
+        durationSec: (Date.now() - startMs) / 1000,
+      });
       toast.success(
         `Successfully ${bulkGenerateMipmaps ? "enabled" : "disabled"} mipmap generation for ${textures.length} KTX2 texture${textures.length !== 1 ? "s" : ""}.`
       );
@@ -437,6 +477,8 @@ export default function BulkMaterialEditingPanel() {
 
   const handleBulkSupercompressionChange = async () => {
     if (isBulkProcessing) return;
+
+    const startMs = Date.now();
 
     try {
       useModelStore.setState({ isBulkProcessing: true });
@@ -488,6 +530,12 @@ export default function BulkMaterialEditingPanel() {
 
       // Update stats
       updateModelStats();
+      trackBulkOperation({
+        setting: "ktx2_supercompression",
+        value: bulkEnableSupercompression,
+        affectedTextureCount: textures.length,
+        durationSec: (Date.now() - startMs) / 1000,
+      });
       toast.success(
         `Successfully ${bulkEnableSupercompression ? "enabled" : "disabled"} supercompression for ${textures.length} UASTC KTX2 texture${textures.length !== 1 ? "s" : ""}.`
       );
@@ -504,6 +552,8 @@ export default function BulkMaterialEditingPanel() {
 
   const handleBulkRDOChange = async () => {
     if (isBulkProcessing) return;
+
+    const startMs = Date.now();
 
     try {
       useModelStore.setState({ isBulkProcessing: true });
@@ -555,6 +605,12 @@ export default function BulkMaterialEditingPanel() {
 
       // Update stats
       updateModelStats();
+      trackBulkOperation({
+        setting: "ktx2_rdo",
+        value: bulkEnableRDO,
+        affectedTextureCount: textures.length,
+        durationSec: (Date.now() - startMs) / 1000,
+      });
       toast.success(
         `Successfully ${bulkEnableRDO ? "enabled" : "disabled"} RDO for ${textures.length} UASTC KTX2 texture${textures.length !== 1 ? "s" : ""}.`
       );
@@ -571,6 +627,8 @@ export default function BulkMaterialEditingPanel() {
 
   const handleBulkRdoQualityLevelChange = async () => {
     if (isBulkProcessing) return;
+
+    const startMs = Date.now();
 
     try {
       useModelStore.setState({ isBulkProcessing: true });
@@ -623,6 +681,12 @@ export default function BulkMaterialEditingPanel() {
 
       // Update stats
       updateModelStats();
+      trackBulkOperation({
+        setting: "ktx2_rdo_quality",
+        value: bulkRdoQualityLevel,
+        affectedTextureCount: textures.length,
+        durationSec: (Date.now() - startMs) / 1000,
+      });
       toast.success(
         `Successfully set RDO quality level to ${bulkRdoQualityLevel.toFixed(1)} for ${textures.length} UASTC KTX2 texture${textures.length !== 1 ? "s" : ""}.`
       );

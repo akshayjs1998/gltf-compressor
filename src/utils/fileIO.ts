@@ -17,6 +17,11 @@ import {
 import { DocumentView, ImageProvider } from "@gltf-transform/view";
 import { toast } from "sonner";
 
+import {
+  ModelLoadSource,
+  trackError,
+  trackModelLoaded,
+} from "@/lib/analytics";
 import { useModelStore } from "@/stores/useModelStore";
 import { useViewportStore } from "@/stores/useViewportStore";
 import { defaultKTX2Options, TextureCompressionSettings } from "@/types/types";
@@ -320,7 +325,10 @@ function buildTextureCompressionSettingsMap(
 
 function initializeModel(
   fileName: string,
-  result: Awaited<ReturnType<typeof createDocumentsAndSceneFromURL>>
+  result: Awaited<ReturnType<typeof createDocumentsAndSceneFromURL>>,
+  source: ModelLoadSource,
+  format: "glb" | "gltf",
+  sourceSizeBytes: number | null
 ): boolean {
   const {
     originalDocument,
@@ -333,6 +341,7 @@ function initializeModel(
 
   if (!originalScene || !modifiedScene) {
     toast.error("No scenes were found in the glTF file.");
+    trackError({ phase: "parse", category: "no_scene" });
     return false;
   }
 
@@ -353,26 +362,52 @@ function initializeModel(
   });
 
   useModelStore.getState().setInitialModelStats();
+
+  const stats = useModelStore.getState().modelStats;
+  const extensions = originalDocument
+    .getRoot()
+    .listExtensionsUsed()
+    .map((e) => e.extensionName);
+  trackModelLoaded({
+    source,
+    format,
+    sourceSizeBytes,
+    inMemorySizeKB: stats.initialTotalSize,
+    textureSizeKB: stats.initialSizeOfTextures,
+    textureCount: stats.numTextures,
+    meshCount: stats.numMeshes,
+    animationCount: stats.numAnimationClips,
+    extensions,
+  });
+
   return true;
 }
 
-export const importFromURL = async (url: string) => {
+export const importFromURL = async (
+  url: string,
+  source: ModelLoadSource = "url_param"
+) => {
   useViewportStore.setState({ loadingFiles: true });
 
   try {
     const parsedURL = new URL(url);
     const fileName = parsedURL.pathname.split("/").pop()?.replace(/\.[^.]+$/, "") || "model";
+    const format: "glb" | "gltf" = parsedURL.pathname.toLowerCase().endsWith(".gltf") ? "gltf" : "glb";
     const result = await createDocumentsAndSceneFromURL(url);
-    initializeModel(fileName, result);
+    initializeModel(fileName, result, source, format, null);
   } catch (error) {
     console.error("Error loading model from URL:", error);
     toast.error("Failed to load model from URL.");
+    trackError({ phase: "url_param_fetch", category: "fetch_or_parse_failed" });
   } finally {
     useViewportStore.setState({ loadingFiles: false });
   }
 };
 
-export const importFiles = async <T extends File>(acceptedFiles: T[]) => {
+export const importFiles = async <T extends File>(
+  acceptedFiles: T[],
+  source: ModelLoadSource = "dropzone"
+) => {
   useViewportStore.setState({ loadingFiles: true });
 
   if (acceptedFiles.length === 0) {
@@ -439,7 +474,7 @@ export const importFiles = async <T extends File>(acceptedFiles: T[]) => {
     );
 
     const result = await createDocumentsAndSceneFromURL(url);
-    initializeModel(fileName, result);
+    initializeModel(fileName, result, source, "glb", acceptedFiles[0].size);
     URL.revokeObjectURL(url);
 
     useViewportStore.setState({ loadingFiles: false });
@@ -470,10 +505,12 @@ export const importFiles = async <T extends File>(acceptedFiles: T[]) => {
   try {
     const fileName = mainFilePath.substring(0, mainFilePath.lastIndexOf("."));
     const result = await createDocumentsAndSceneFromBuffers(buffers, mainFilePath);
-    initializeModel(fileName, result);
+    const totalBytes = acceptedFiles.reduce((sum, f) => sum + f.size, 0);
+    initializeModel(fileName, result, source, "gltf", totalBytes);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     toast.error(error.message);
+    trackError({ phase: "parse", category: "gltf_parse_failed" });
   } finally {
     useViewportStore.setState({ loadingFiles: false });
   }
@@ -488,7 +525,7 @@ export const exportDocument = async (
   doWeld: boolean,
   doResample: boolean,
   doPrune: boolean
-) => {
+): Promise<number> => {
   const finalDocument = cloneDocument(documentToExport);
 
   if (deduplicate || flattenAndJoin || doWeld || doResample || doPrune) {
@@ -595,4 +632,6 @@ export const exportDocument = async (
   document.body.appendChild(a);
   a.click();
   URL.revokeObjectURL(url);
+
+  return compressedArrayBuffer.byteLength;
 };

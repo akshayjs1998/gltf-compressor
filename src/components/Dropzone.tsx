@@ -12,7 +12,7 @@ import { useTheme } from "./ThemeProvider";
 
 export function Dropzone() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: importFiles,
+    onDrop: (files) => importFiles(files, "dropzone"),
     noClick: true,
     noKeyboard: true,
   });
@@ -221,7 +221,7 @@ export function Dropzone() {
                 });
 
                 // Call importFiles with the file
-                await importFiles([file]);
+                await importFiles([file], "demo");
               } catch (error) {
                 console.error("Error loading demo file:", error);
                 toast.error("Failed to load demo model. Please try again.");

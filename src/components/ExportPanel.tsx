@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { trackError, trackExportCompleted } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -71,7 +72,7 @@ export function ExportPanel() {
     if (!modifiedDocument) return;
 
     try {
-      await exportDocument(
+      const finalBlobBytes = await exportDocument(
         fileName,
         modifiedDocument,
         dracoCompress,
@@ -81,6 +82,31 @@ export function ExportPanel() {
         resample,
         prune
       );
+
+      const { modelStats } = useModelStore.getState();
+      const textureMimeTypes = modifiedDocument
+        .getRoot()
+        .listTextures()
+        .map((t) => t.getMimeType());
+      const optimizations: string[] = [];
+      if (deduplicate) optimizations.push("deduplicate");
+      if (flattenAndJoin) optimizations.push("flatten_and_join");
+      if (weld) optimizations.push("weld");
+      if (resample) optimizations.push("resample");
+      if (prune) optimizations.push("prune");
+
+      trackExportCompleted({
+        textureMimeTypes,
+        fallbackOriginalSizeKB: modelStats.initialTotalSize,
+        finalSizeKB: finalBlobBytes / 1000,
+        originalTextureSizeKB: modelStats.initialSizeOfTextures,
+        finalTextureSizeKB: modelStats.sizeOfTextures,
+        usedDracoCompression: dracoCompress,
+        optimizations,
+      });
+    } catch (error) {
+      console.error("Error during export:", error);
+      trackError({ phase: "export", category: "export_failed" });
     } finally {
       toast.success("glTF file exported successfully!");
       useViewportStore.getState().triggerConfetti();

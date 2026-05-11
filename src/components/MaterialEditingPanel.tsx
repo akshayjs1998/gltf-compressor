@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
+import { trackTextureModified } from "@/lib/analytics";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -271,6 +272,7 @@ export default function MaterialEditingPanel() {
           if (result.warning) {
             toast.warning(result.warning);
           }
+          trackTextureModified({ setting: "compression", value: true });
         } finally {
           // Flag texture as done compressing
           updateTextureCompressionSettings(selectedTexture, {
@@ -309,6 +311,7 @@ export default function MaterialEditingPanel() {
           .then(() => {
             // Update user interface
             updateModelStats();
+            trackTextureModified({ setting: "compression", value: false });
           })
           .catch((error) => {
             console.error("Error restoring original texture: ", error);
@@ -391,18 +394,22 @@ export default function MaterialEditingPanel() {
 
   const handleMimeTypeChange = async (value: string) => {
     await handleCompressionSettingChange(value, setMimeType, "mimeType");
+    trackTextureModified({ setting: "format", value });
   };
 
   const handleMaxResolutionChange = async (value: string) => {
+    const numeric = parseInt(value, 10);
     await handleCompressionSettingChange(
-      parseInt(value, 10),
+      numeric,
       setMaxResolution,
       "maxResolution"
     );
+    trackTextureModified({ setting: "resolution", value: numeric });
   };
 
   const handleQualityChange = async (value: number) => {
     await handleCompressionSettingChange(value, setQuality, "quality");
+    trackTextureModified({ setting: "quality", value });
   };
 
   const handleKtx2OptionChange = async <K extends keyof KTX2Options>(
