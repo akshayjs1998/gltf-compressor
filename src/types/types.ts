@@ -59,3 +59,59 @@ export interface TextureBounds {
   bottom: number;
   statusShouldBeAboveBottomEdge: boolean;
 }
+
+// ---------- Batch queue types ----------
+
+/**
+ * The texture compression settings that are applied to every texture of
+ * every file in the batch queue. Unlike `TextureCompressionSettings`, these
+ * are not tied to a specific `Texture` instance since queued files aren't
+ * loaded into memory (or the 3D viewport) until they're processed.
+ */
+export interface BatchCompressionSettings {
+  mimeType: string;
+  maxResolution: number;
+  quality: number;
+  ktx2Options: KTX2Options;
+}
+
+export const defaultBatchCompressionSettings: BatchCompressionSettings = {
+  mimeType: "image/jpeg",
+  maxResolution: 2048,
+  quality: 0.8,
+  ktx2Options: { ...defaultKTX2Options },
+};
+
+export interface BatchExportSettings {
+  dracoCompress: boolean;
+  deduplicate: boolean;
+  flattenAndJoin: boolean;
+  weld: boolean;
+  resample: boolean;
+  prune: boolean;
+}
+
+export const defaultBatchExportSettings: BatchExportSettings = {
+  dracoCompress: false,
+  deduplicate: false,
+  flattenAndJoin: false,
+  weld: false,
+  resample: false,
+  prune: false,
+};
+
+export type QueueItemStatus =
+  | "pending"
+  | "processing"
+  | "done"
+  | "error";
+
+export interface QueueItem {
+  id: string;
+  file: File;
+  fileName: string;
+  status: QueueItemStatus;
+  originalSizeBytes: number;
+  finalSizeBytes: number | null;
+  errorMessage: string | null;
+}

@@ -203,6 +203,32 @@ export function trackExportCompleted(args: {
   });
 }
 
+export function trackQueueProcessed(args: {
+  fileCount: number;
+  succeeded: number;
+  failed: number;
+  originalTotalSizeKB: number;
+  finalTotalSizeKB: number;
+  durationSec: number;
+}) {
+  const reductionPct =
+    args.originalTotalSizeKB > 0
+      ? ((args.originalTotalSizeKB - args.finalTotalSizeKB) /
+          args.originalTotalSizeKB) *
+        100
+      : 0;
+
+  track("queue_processed", {
+    file_count: args.fileCount,
+    succeeded: args.succeeded,
+    failed: args.failed,
+    original_total_size_kb: Math.round(args.originalTotalSizeKB),
+    final_total_size_kb: Math.round(args.finalTotalSizeKB),
+    size_reduction_pct: Number(reductionPct.toFixed(1)),
+    duration_s: Number(args.durationSec.toFixed(1)),
+  });
+}
+
 export type ErrorPhase = "parse" | "url_param_fetch" | "export";
 
 export function trackError(args: { phase: ErrorPhase; category: string }) {

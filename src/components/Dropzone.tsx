@@ -4,15 +4,31 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useQueueStore } from "@/stores/useQueueStore";
 import { importFiles } from "@/utils/fileIO";
 import "../App.css";
 
 import { useViewportStore } from "@/stores/useViewportStore";
 import { useTheme } from "./ThemeProvider";
 
+// When multiple .glb files are dropped/selected together, treat it as a
+// batch queue instead of trying to load them as a single model. (A queue of
+// .gltf files isn't supported since each .gltf bundle needs its external
+// resources matched up individually.)
+const handleFiles = (files: File[]) => {
+  if (files.length > 1) {
+    const glbFiles = files.filter((file) => /\.glb$/i.test(file.name));
+    if (glbFiles.length === files.length) {
+      useQueueStore.getState().addFiles(glbFiles);
+      return;
+    }
+  }
+  importFiles(files, "dropzone");
+};
+
 export function Dropzone() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: (files) => importFiles(files, "dropzone"),
+    onDrop: handleFiles,
     noClick: true,
     noKeyboard: true,
   });
@@ -100,7 +116,7 @@ export function Dropzone() {
                     (e.target as HTMLInputElement).files || []
                   );
                   if (files.length > 0) {
-                    importFiles(files);
+                    handleFiles(files);
                   }
                 };
                 input.click();
@@ -116,7 +132,7 @@ export function Dropzone() {
                       (e.target as HTMLInputElement).files || []
                     );
                     if (files.length > 0) {
-                      importFiles(files);
+                      handleFiles(files);
                     }
                   };
                   input.click();
@@ -170,8 +186,9 @@ export function Dropzone() {
                       Drag & drop your glTF files here
                     </p>
                     <p className="text-muted-foreground mb-4">
-                      Upload a single .glb file or a single .gltf file with its
-                      external binaries & textures
+                      Upload a single .glb file, a single .gltf file with its
+                      external binaries & textures, or multiple .glb files to
+                      batch compress them in a queue
                     </p>
                     <Button className="bg-blue-600 hover:enabled:bg-blue-500 text-white">
                       <Upload className="w-4 h-4" />

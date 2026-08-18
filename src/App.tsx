@@ -4,6 +4,7 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 import { Dropzone } from "./components/Dropzone";
 import Footer from "./components/Footer";
 import ModelView from "./components/ModelView";
+import { QueuePanel } from "./components/QueuePanel";
 import SettingsView from "./components/SettingsView";
 import StatsView from "./components/StatsView";
 import TextureView from "./components/TextureView";
@@ -11,11 +12,13 @@ import TextureViewStatus from "./components/TextureViewStatus";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Toaster } from "./components/ui/sonner";
 import { useModelStore } from "./stores/useModelStore";
+import { useQueueStore } from "./stores/useQueueStore";
 import { useViewportStore } from "./stores/useViewportStore";
 import { importFromURL } from "./utils/fileIO";
 
 function App() {
   const originalDocument = useModelStore((state) => state.originalDocument);
+  const hasQueuedFiles = useQueueStore((state) => state.items.length > 0);
   const hasLoadedURLModel = useRef(false);
 
   useEffect(() => {
@@ -29,7 +32,9 @@ function App() {
 
   return (
     <ThemeProvider>
-      {originalDocument ? (
+      {hasQueuedFiles ? (
+        <QueuePanel />
+      ) : originalDocument ? (
         <div className="flex h-full">
           <div className="w-[80%] h-full">
             <Group
